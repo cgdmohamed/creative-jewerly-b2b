@@ -1,0 +1,29 @@
+services:
+  b2b:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    environment:
+      - SERVICE_URL_B2B_4100
+      - PORT=4100
+      - SHOP_JWT_SECRET=${SERVICE_REALBASE64_64_B2B:-change-me-in-production}
+      - API_BASE_URL=${API_BASE_URL:-http://host.docker.internal:4001}
+      - B2B_USERNAME=${B2B_USERNAME:-b2b}
+      - B2B_PIN=${B2B_PIN:-1234}
+      - SHOP_DB_PATH=/app/server/data/shop.db
+      - STORE_NAME=${STORE_NAME:-متجر الجملة}
+      - CURRENCY=${CURRENCY:-ج.م}
+      - GUEST_ORDERING_ENABLED=${GUEST_ORDERING_ENABLED:-true}
+      - DOWN_PAYMENT_PERCENT=${DOWN_PAYMENT_PERCENT:-0}
+      - PUBLIC_PRICES=${PUBLIC_PRICES:-true}
+      - ACCOUNT_APPROVAL_ENABLED=${ACCOUNT_APPROVAL_ENABLED:-true}
+      - DEFAULT_PAYMENT_METHOD=${DEFAULT_PAYMENT_METHOD:-transfer}
+    expose:
+      - "4100"
+    volumes:
+      - b2b-shop-data:/app/server/data
+    restart: unless-stopped
+
+volumes:
+  b2b-shop-data:

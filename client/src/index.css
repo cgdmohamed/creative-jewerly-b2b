@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  --font-sans: "Tajawal", system-ui, -apple-system, sans-serif;
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+body {
+  @apply text-slate-900 antialiased;
+  background-color: #efe9dc;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d2c9b8 transparent;
+}
+
+::selection {
+  background: #f6d6ae;
+  color: #65300f;
+}
+
+@theme {
+  --color-brand-50: #fbf4ea;
+  --color-brand-100: #f7ead8;
+  --color-brand-200: #fedeba;
+  --color-brand-300: #fcc58e;
+  --color-brand-400: #f5a65b;
+  --color-brand-500: #e0832f;
+  --color-brand-600: #bd5510;
+  --color-brand-700: #9e470e;
+  --color-brand-800: #7d3a10;
+  --color-brand-900: #65300f;
+  --color-slate-400: #64748b;
+  --color-slate-500: #475569;
+  --color-slate-600: #334155;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .invoice-sheet {
+    box-shadow: none !important;
+    border: none !important;
+  }
+}

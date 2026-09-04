@@ -1,0 +1,15 @@
+{
+  "name": "b2b-shop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "متجر جملة (B2B) متصل بواجهة نظام محل الذهب والفضة عبر الـ API الموثّق",
+  "scripts": {
+    "setup:employee": "node scripts/create-b2b-employee.mjs",
+    "api": "npm run dev --prefix server",
+    "web": "npm run dev --prefix client",
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "start": "npm run start --prefix server",
+    "typecheck": "npm run typecheck --prefix server && npm run build --prefix client"
+  }
+}
