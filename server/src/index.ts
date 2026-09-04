@@ -51,6 +51,10 @@ app.use('/api/admin', adminRouter);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'route.notfound' }));
 
+app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
+  res.redirect(302, `/#${req.path}`);
+});
+
 // Production: serve the built shop client from the same process.
 const clientDist = path.resolve(import.meta.dirname, '../../client/dist');
 const clientIndex = path.join(clientDist, 'index.html');

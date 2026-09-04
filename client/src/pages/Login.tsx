@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { UserRound } from 'lucide-react';
+import { ShieldCheck, UserRound } from 'lucide-react';
 import { useAuth } from '@/stores/auth';
 import { ApiError } from '@/lib/api';
 import { Button, Field, Input } from '@/components/ui';
@@ -76,6 +76,11 @@ export default function Login() {
         ليس لديك حساب؟{' '}
         <Link to={`/register${next && next !== '/orders' ? `?next=${next}` : ''}`} className="font-bold text-brand-700 hover:underline">
           سجّل كعميل جملة
+        </Link>
+      </p>
+      <p className="text-center text-sm text-slate-500">
+        <Link to="/admin/login" className="inline-flex items-center gap-1.5 font-bold text-slate-700 hover:underline">
+          <ShieldCheck className="size-4" /> دخول فريق العمل
         </Link>
       </p>
     </div>
