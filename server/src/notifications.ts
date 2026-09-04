@@ -71,7 +71,7 @@ export async function notify(opts: {
   whatsapp?: boolean;
 }): Promise<void> {
   const { type, recipient, subject, body, whatsapp = false } = opts;
-  addNotification({ type, channel: 'inapp', recipient: recipient ?? null, subject, body });
+  await addNotification({ type, channel: 'inapp', recipient: recipient ?? null, subject, body });
 
   const phone = recipient && whatsapp ? recipient : null;
   const email = recipient && whatsapp === false ? recipient : null;
@@ -83,7 +83,7 @@ export async function notify(opts: {
   const sentWA = phone ? await sendWhatsApp(phone, body) : false;
 
   if ((email && !emailed) || (phone && !sentWA)) {
-    addNotification({
+    await addNotification({
       type,
       channel: phone ? 'whatsapp' : 'email',
       recipient: recipient ?? null,

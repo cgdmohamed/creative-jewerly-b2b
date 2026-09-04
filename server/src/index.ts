@@ -10,6 +10,7 @@ import { authRouter } from './routes/auth.js';
 import { catalogRouter } from './routes/catalog.js';
 import { ordersRouter } from './routes/orders.js';
 import { adminRouter } from './routes/admin.js';
+import { initShopDb } from './db.js';
 
 const app = express();
 app.use(cors({ origin: true, methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] }));
@@ -70,6 +71,8 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   console.error('[shop error]', err);
   res.status(err.status || 500).json({ error: err.expose || err.status ? err.message : 'internal' });
 });
+
+await initShopDb();
 
 app.listen(config.port, () => {
   console.log(`B2B shop listening on http://localhost:${config.port}`);

@@ -4,6 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runtime
+    depends_on:
+      b2b-postgres:
+        condition: service_healthy
     environment:
       - SERVICE_URL_B2B_4100
       - PORT=4100
@@ -11,7 +14,11 @@ services:
       - API_BASE_URL=${API_BASE_URL:-http://host.docker.internal:4001}
       - B2B_USERNAME=${B2B_USERNAME:-b2b}
       - B2B_PIN=${B2B_PIN:-1234}
-      - SHOP_DB_PATH=/app/server/data/shop.db
+      - SHOP_PGHOST=b2b-postgres
+      - SHOP_PGPORT=5432
+      - SHOP_PGUSER=${SHOP_PGUSER:-b2b_shop}
+      - SHOP_PGPASSWORD=${SERVICE_PASSWORD_B2B_POSTGRES:-b2b_shop123}
+      - SHOP_PGDATABASE=${SHOP_PGDATABASE:-b2b_shop}
       - STORE_NAME=${STORE_NAME:-متجر الجملة}
       - CURRENCY=${CURRENCY:-ج.م}
       - GUEST_ORDERING_ENABLED=${GUEST_ORDERING_ENABLED:-true}
@@ -21,9 +28,22 @@ services:
       - DEFAULT_PAYMENT_METHOD=${DEFAULT_PAYMENT_METHOD:-transfer}
     expose:
       - "4100"
+    restart: unless-stopped
+
+  b2b-postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${SHOP_PGUSER:-b2b_shop}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_B2B_POSTGRES:-b2b_shop123}
+      - POSTGRES_DB=${SHOP_PGDATABASE:-b2b_shop}
     volumes:
-      - b2b-shop-data:/app/server/data
+      - b2b-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
 volumes:
-  b2b-shop-data:
+  b2b-postgres-data:

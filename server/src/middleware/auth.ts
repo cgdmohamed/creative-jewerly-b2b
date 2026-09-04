@@ -15,12 +15,12 @@ export function signShopToken(user: { id: number }): string {
   return jwt.sign({ sub: user.id }, config.shopJwtSecret, { expiresIn: '7d' });
 }
 
-export function authenticateShop(req: Request, res: Response, next: NextFunction) {
+export async function authenticateShop(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) return res.status(401).json({ error: 'auth.required' });
   try {
     const payload = jwt.verify(header.slice(7), config.shopJwtSecret) as jwt.JwtPayload;
-    const user = findUserById(Number(payload.sub));
+    const user = await findUserById(Number(payload.sub));
     if (!user) return res.status(401).json({ error: 'auth.required' });
     req.shopUser = user;
     next();
@@ -29,12 +29,12 @@ export function authenticateShop(req: Request, res: Response, next: NextFunction
   }
 }
 
-export function optionalShopAuth(req: Request, _res: Response, next: NextFunction) {
+export async function optionalShopAuth(req: Request, _res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (header?.startsWith('Bearer ')) {
     try {
       const payload = jwt.verify(header.slice(7), config.shopJwtSecret) as jwt.JwtPayload;
-      const user = findUserById(Number(payload.sub));
+      const user = await findUserById(Number(payload.sub));
       if (user) req.shopUser = user;
     } catch {
       // ignore invalid token; treat as anonymous

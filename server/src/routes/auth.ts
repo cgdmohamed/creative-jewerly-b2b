@@ -4,7 +4,7 @@ import { config } from '../config.js';
 import { authenticateShop, signShopToken } from '../middleware/auth.js';
 import {
   findUserByEmail, findUserByPhone, findUserById, createUser,
-  updateUserProfile, setUserPassword,
+  updateUserProfile, setUserPassword, setUserApiCustomerId,
 } from '../db.js';
 import { mainApi } from '../apiClient.js';
 
@@ -25,16 +25,16 @@ authRouter.post('/register', async (req, res) => {
   const identity = String(email || phone || '').trim();
   if (!identity) return res.status(400).json({ error: 'missing.email.or.phone' });
 
-  if (email && findUserByEmail(String(email).toLowerCase())) {
+  if (email && await findUserByEmail(String(email).toLowerCase())) {
     return res.status(409).json({ error: 'email.duplicate' });
   }
-  if (phone && findUserByPhone(String(phone))) {
+  if (phone && await findUserByPhone(String(phone))) {
     return res.status(409).json({ error: 'phone.duplicate' });
   }
 
   const hash = bcrypt.hashSync(String(password), 10);
   try {
-    const user = createUser({
+    const user = await createUser({
       name: String(name).trim(),
       company: company?.trim() || null,
       email: email?.trim().toLowerCase() || null,
@@ -50,7 +50,7 @@ authRouter.post('/register', async (req, res) => {
         phone: user.phone ?? undefined,
         email: user.email ?? undefined,
       });
-      await (await import('../db.js')).setUserApiCustomerId(user.id, apiCustomer.id);
+      await setUserApiCustomerId(user.id, apiCustomer.id);
       (user as any).apiCustomerId = apiCustomer.id;
     } catch (e: any) {
       // The shop account still works even if the mirror failed; a new customer
@@ -68,7 +68,7 @@ authRouter.post('/login', async (req, res) => {
   const { identifier, password } = req.body ?? {};
   if (!identifier || !password) return res.status(400).json({ error: 'auth.missing' });
   const user =
-    findUserByEmail(String(identifier).toLowerCase()) || findUserByPhone(String(identifier).trim());
+    (await findUserByEmail(String(identifier).toLowerCase())) || (await findUserByPhone(String(identifier).trim()));
   if (!user || !bcrypt.compareSync(String(password), user.passwordHash)) {
     return res.status(401).json({ error: 'auth.invalid' });
   }
@@ -90,15 +90,15 @@ authRouter.patch('/me', authenticateShop, async (req, res) => {
   if (!newEmail && !newPhone) return res.status(400).json({ error: 'missing.email.or.phone' });
 
   if (newEmail && newEmail !== user.email) {
-    const clash = findUserByEmail(newEmail);
+    const clash = await findUserByEmail(newEmail);
     if (clash && clash.id !== user.id) return res.status(409).json({ error: 'email.duplicate' });
   }
   if (newPhone && newPhone !== user.phone) {
-    const clash = findUserByPhone(newPhone);
+    const clash = await findUserByPhone(newPhone);
     if (clash && clash.id !== user.id) return res.status(409).json({ error: 'phone.duplicate' });
   }
 
-  updateUserProfile(user.id, {
+  await updateUserProfile(user.id, {
     name: String(name).trim(),
     company: company?.trim() || null,
     email: newEmail,
@@ -118,11 +118,11 @@ authRouter.patch('/me', authenticateShop, async (req, res) => {
     }
   }
 
-  res.json({ user: publicUser(findUserById(user.id)!) });
+  res.json({ user: publicUser(await findUserById(user.id)) });
 });
 
 // ---- POST /api/auth/me/password — change password (requires current) ----
-authRouter.post('/me/password', authenticateShop, (req, res) => {
+authRouter.post('/me/password', authenticateShop, async (req, res) => {
   const user = req.shopUser!;
   const { currentPassword, newPassword } = req.body ?? {};
   if (!currentPassword || !newPassword) return res.status(400).json({ error: 'auth.missing' });
@@ -130,6 +130,6 @@ authRouter.post('/me/password', authenticateShop, (req, res) => {
   if (!bcrypt.compareSync(String(currentPassword), user.passwordHash)) {
     return res.status(403).json({ error: 'bad.currentPassword' });
   }
-  setUserPassword(user.id, bcrypt.hashSync(String(newPassword), 10));
+  await setUserPassword(user.id, bcrypt.hashSync(String(newPassword), 10));
   res.json({ ok: true });
 });

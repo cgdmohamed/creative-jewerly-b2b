@@ -31,9 +31,9 @@ function assertLineQty(item: { code: string; availableQty?: number; quantity?: n
   if (quantity > available) httpError(409, `items.not_available:${item.code}`);
 }
 
-function ownOrders(user: any): ShopOrder[] {
-  const byUser = listOrdersByUser(user.id);
-  const byEmail = user.email ? listOrdersByEmail(user.email) : [];
+async function ownOrders(user: any): Promise<ShopOrder[]> {
+  const byUser = await listOrdersByUser(user.id);
+  const byEmail = user.email ? await listOrdersByEmail(user.email) : [];
   const seen = new Set<number>();
   const all = [...byEmail, ...byUser].filter((o) => (seen.has(o.id) ? false : (seen.add(o.id), true)));
   return all.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -88,7 +88,7 @@ ordersRouter.post('/', optionalShopAuth, async (req, res) => {
         address: company?.trim() || undefined,
       });
       customerId = apiCustomer.id;
-      if (user) setUserApiCustomerId(user.id, customerId);
+      if (user) await setUserApiCustomerId(user.id, customerId);
     }
 
     // 4) Hold the stock: one reservation per line in the main system.
@@ -139,8 +139,8 @@ ordersRouter.post('/', optionalShopAuth, async (req, res) => {
       photoUrl: l.item.photoUrl ?? null,
     }));
 
-    const order = createOrder({
-      orderNo: nextOrderNo(today()),
+    const order = await createOrder({
+      orderNo: await nextOrderNo(today()),
       userId: user?.id ?? null,
       customerId,
       customerName: String(name).trim(),
@@ -170,15 +170,15 @@ ordersRouter.post('/', optionalShopAuth, async (req, res) => {
 });
 
 // ---- GET /api/orders — the authenticated buyer's orders ----
-ordersRouter.get('/', authenticateShop, (req, res) => {
-  res.json({ orders: ownOrders(req.shopUser!) });
+ordersRouter.get('/', authenticateShop, async (req, res) => {
+  res.json({ orders: await ownOrders(req.shopUser!) });
 });
 
 // ---- POST /api/orders/track — guest lookup by order number + phone/email ----
-ordersRouter.post('/track', (req, res) => {
+ordersRouter.post('/track', async (req, res) => {
   const { orderNo, phone, email } = req.body ?? {};
   if (!orderNo) return res.status(400).json({ error: 'missing:orderNo' });
-  const order = getOrderByNo(String(orderNo).trim().toUpperCase());
+  const order = await getOrderByNo(String(orderNo).trim().toUpperCase());
   if (!order) return res.status(404).json({ error: 'order.notfound' });
   const identity = String(phone || email || '').trim();
   if (!identity) return res.status(400).json({ error: 'missing:phone.or.email' });
@@ -193,7 +193,7 @@ ordersRouter.post('/track', (req, res) => {
 ordersRouter.post('/track/cancel', async (req, res) => {
   const { orderNo, phone, email } = req.body ?? {};
   if (!orderNo) return res.status(400).json({ error: 'missing:orderNo' });
-  const order = getOrderByNo(String(orderNo).trim().toUpperCase());
+  const order = await getOrderByNo(String(orderNo).trim().toUpperCase());
   if (!order) return res.status(404).json({ error: 'order.notfound' });
   const identity = String(phone || email || '').trim();
   if (!identity) return res.status(400).json({ error: 'missing:phone.or.email' });
@@ -207,7 +207,7 @@ ordersRouter.post('/track/cancel', async (req, res) => {
   for (const rid of order.apiReservationIds) {
     await mainApi.cancelReservation(rid).catch(() => null);
   }
-  updateOrderStatus(order.id, 'cancelled');
+  await updateOrderStatus(order.id, 'cancelled');
   notify({
     type: 'order.cancelled',
     recipient: order.email || order.customerPhone,
@@ -215,23 +215,23 @@ ordersRouter.post('/track/cancel', async (req, res) => {
     subject: `تم إلغاء طلب ${order.orderNo}`,
     body: `تم إلغاء طلب ${order.orderNo} — تم تحرير الحجز على القطع.`,
   }).catch(() => null);
-  res.json({ ok: true, order: getOrderById(order.id) });
+  res.json({ ok: true, order: await getOrderById(order.id) });
 });
 
 // ---- GET /api/orders/:id — order detail (own orders only) ----
-ordersRouter.get('/:id', authenticateShop, (req, res) => {
-  const order = getOrderById(Number(req.params.id));
+ordersRouter.get('/:id', authenticateShop, async (req, res) => {
+  const order = await getOrderById(Number(req.params.id));
   if (!order) return res.status(404).json({ error: 'notfound' });
-  const mine = ownOrders(req.shopUser!).some((o) => o.id === order.id);
+  const mine = (await ownOrders(req.shopUser!)).some((o) => o.id === order.id);
   if (!mine) return res.status(403).json({ error: 'forbidden' });
   res.json({ order });
 });
 
 // ---- POST /api/orders/:id/edit — buyer edits a pending order (re-reserves) ----
 ordersRouter.post('/:id/edit', authenticateShop, async (req, res) => {
-  const order = getOrderById(Number(req.params.id));
+  const order = await getOrderById(Number(req.params.id));
   if (!order) return res.status(404).json({ error: 'notfound' });
-  const mine = ownOrders(req.shopUser!).some((o) => o.id === order.id);
+  const mine = (await ownOrders(req.shopUser!)).some((o) => o.id === order.id);
   if (!mine) return res.status(403).json({ error: 'forbidden' });
   if (order.status !== 'pending') {
     return res.status(409).json({ error: 'order.not_editable' });
@@ -304,7 +304,7 @@ ordersRouter.post('/:id/edit', authenticateShop, async (req, res) => {
       photoUrl: l.item.photoUrl ?? null,
     }));
 
-    updateOrderContents(order.id, {
+    await updateOrderContents(order.id, {
       items: itemsJson,
       metalSubtotal: totals.metalSubtotal,
       craftsmanshipTotal: totals.craftsmanshipTotal,
@@ -315,7 +315,8 @@ ordersRouter.post('/:id/edit', authenticateShop, async (req, res) => {
       apiReservationIds: reservationIds,
     });
 
-    const updated = getOrderById(order.id)!;
+    const updated = await getOrderById(order.id);
+    if (!updated) return res.status(404).json({ error: 'notfound' });
     notify({
       type: 'order.updated',
       subject: `تعديل طلب ${order.orderNo}`,
@@ -330,9 +331,9 @@ ordersRouter.post('/:id/edit', authenticateShop, async (req, res) => {
 
 // ---- POST /api/orders/:id/cancel — buyer cancels an open order ----
 ordersRouter.post('/:id/cancel', authenticateShop, async (req, res) => {
-  const order = getOrderById(Number(req.params.id));
+  const order = await getOrderById(Number(req.params.id));
   if (!order) return res.status(404).json({ error: 'notfound' });
-  const mine = ownOrders(req.shopUser!).some((o) => o.id === order.id);
+  const mine = (await ownOrders(req.shopUser!)).some((o) => o.id === order.id);
   if (!mine) return res.status(403).json({ error: 'forbidden' });
   if (order.status !== 'pending' && order.status !== 'confirmed') {
     return res.status(409).json({ error: 'order.not_cancellable' });
@@ -340,7 +341,7 @@ ordersRouter.post('/:id/cancel', authenticateShop, async (req, res) => {
   for (const rid of order.apiReservationIds) {
     await mainApi.cancelReservation(rid).catch(() => null);
   }
-  updateOrderStatus(order.id, 'cancelled');
+  await updateOrderStatus(order.id, 'cancelled');
   notify({
     type: 'order.cancelled',
     recipient: order.email || order.customerPhone,
@@ -348,5 +349,5 @@ ordersRouter.post('/:id/cancel', authenticateShop, async (req, res) => {
     subject: `تم إلغاء طلب ${order.orderNo}`,
     body: `تم إلغاء طلب ${order.orderNo} — تم تحرير الحجز على القطع.`,
   }).catch(() => null);
-  res.json({ ok: true, order: getOrderById(order.id) });
+  res.json({ ok: true, order: await getOrderById(order.id) });
 });

@@ -73,15 +73,15 @@ adminRouter.get('/me', requireAdmin, (req, res) => {
 });
 
 // ---- orders ----
-adminRouter.get('/orders', requireAdmin, (req, res) => {
+adminRouter.get('/orders', requireAdmin, async (req, res) => {
   const status = (req.query.status as string) || undefined;
   const valid: OrderStatus[] = ['pending', 'confirmed', 'rejected', 'completed', 'cancelled'];
   const filtered = valid.includes(status as OrderStatus) ? (status as OrderStatus) : undefined;
-  res.json({ orders: listAllOrders(filtered), unread: countUnreadNotifications() });
+  res.json({ orders: await listAllOrders(filtered), unread: await countUnreadNotifications() });
 });
 
 adminRouter.get('/orders/:id', requireAdmin, async (req, res) => {
-  const order = getOrderById(Number(req.params.id));
+  const order = await getOrderById(Number(req.params.id));
   if (!order) return res.status(404).json({ error: 'notfound' });
 
   // Estimate today's price for this order, so staff can see if rates moved
@@ -111,38 +111,38 @@ adminRouter.get('/orders/:id', requireAdmin, async (req, res) => {
 });
 
 adminRouter.post('/orders/:id/confirm', requireAdmin, async (req, res) => {
-  const order = getOrderById(Number(req.params.id));
+  const order = await getOrderById(Number(req.params.id));
   if (!order) return res.status(404).json({ error: 'notfound' });
   requireStep(order, 'confirmed');
-  updateOrderStatus(order.id, 'confirmed');
+  await updateOrderStatus(order.id, 'confirmed');
   await notifyBuyer(
     order,
     `تم تأكيد طلب ${order.orderNo}`,
     `تم تأكيد طلبك ${order.orderNo}. سيتم التواصل معك لترتيب التحصيل أو الشحن.`,
   );
-  res.json({ ok: true, order: getOrderById(order.id) });
+  res.json({ ok: true, order: await getOrderById(order.id) });
 });
 
 adminRouter.post('/orders/:id/reject', requireAdmin, async (req, res) => {
-  const order = getOrderById(Number(req.params.id));
+  const order = await getOrderById(Number(req.params.id));
   if (!order) return res.status(404).json({ error: 'notfound' });
   const reason = String((req.body ?? {}).reason || '').trim() || 'لم يذكر سبب';
   requireStep(order, 'rejected');
   for (const rid of order.apiReservationIds) {
     await mainApi.cancelReservation(rid).catch(() => null);
   }
-  setOrderRejectReason(order.id, reason);
-  updateOrderStatus(order.id, 'rejected');
+  await setOrderRejectReason(order.id, reason);
+  await updateOrderStatus(order.id, 'rejected');
   await notifyBuyer(
     order,
     `تم رفض طلب ${order.orderNo}`,
     `نعتذر، لم نتمكن من تنفيذ طلبك ${order.orderNo}.\nالسبب: ${reason}\nيمكنك التواصل معنا لأي استفسار.`,
   );
-  res.json({ ok: true, order: getOrderById(order.id) });
+  res.json({ ok: true, order: await getOrderById(order.id) });
 });
 
 adminRouter.post('/orders/:id/complete', requireAdmin, async (req, res) => {
-  const order = getOrderById(Number(req.params.id));
+  const order = await getOrderById(Number(req.params.id));
   if (!order) return res.status(404).json({ error: 'notfound' });
   const paymentMethod = String((req.body ?? {}).paymentMethod || config.defaultPaymentMethod);
   if (!PAYMENT_METHODS.includes(paymentMethod)) {
@@ -158,9 +158,9 @@ adminRouter.post('/orders/:id/complete', requireAdmin, async (req, res) => {
       paidAmount: order.downPayment,
     });
     if (!invoice?.id) throw new Error('invoice.failed');
-    setOrderInvoice(order.id, String(invoice.invoiceNo || invoice.invoice_no || ''), Number(invoice.id));
-    setOrderPaymentMethod(order.id, paymentMethod);
-    updateOrderStatus(order.id, 'completed');
+    await setOrderInvoice(order.id, String(invoice.invoiceNo || invoice.invoice_no || ''), Number(invoice.id));
+    await setOrderPaymentMethod(order.id, paymentMethod);
+    await updateOrderStatus(order.id, 'completed');
     await notifyBuyer(
       order,
       `تم تنفيذ طلب ${order.orderNo}`,
@@ -168,83 +168,83 @@ adminRouter.post('/orders/:id/complete', requireAdmin, async (req, res) => {
         (order.downPayment > 0 ? ` المدفوع: ${order.downPayment} ${config.currency}.` : '') +
         ` فاتورة: ${invoice.invoiceNo || invoice.invoice_no || ''}`,
     );
-    res.json({ ok: true, order: getOrderById(order.id), invoiceNo: invoice.invoiceNo || invoice.invoice_no || null });
+    res.json({ ok: true, order: await getOrderById(order.id), invoiceNo: invoice.invoiceNo || invoice.invoice_no || null });
   } catch (e: any) {
     res.status(e?.status || 409).json({ error: e?.message || 'invoice.failed' });
   }
 });
 
 adminRouter.post('/orders/:id/cancel', requireAdmin, async (req, res) => {
-  const order = getOrderById(Number(req.params.id));
+  const order = await getOrderById(Number(req.params.id));
   if (!order) return res.status(404).json({ error: 'notfound' });
   requireStep(order, 'cancelled');
   for (const rid of order.apiReservationIds) {
     await mainApi.cancelReservation(rid).catch(() => null);
   }
-  updateOrderStatus(order.id, 'cancelled');
+  await updateOrderStatus(order.id, 'cancelled');
   await notifyBuyer(
     order,
     `تم إلغاء طلب ${order.orderNo}`,
     `تم إلغاء طلبك ${order.orderNo} — تم تحرير الحجز على القطع.`,
   );
-  res.json({ ok: true, order: getOrderById(order.id) });
+  res.json({ ok: true, order: await getOrderById(order.id) });
 });
 
 // ---- account approval ----
-adminRouter.get('/users', requireAdmin, (_req, res) => {
-  res.json({ users: listUsers() });
+adminRouter.get('/users', requireAdmin, async (_req, res) => {
+  res.json({ users: await listUsers() });
 });
 
 adminRouter.post('/users/:id/approve', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
-  updateUserStatus(id, 'active');
+  await updateUserStatus(id, 'active');
   res.json({ ok: true });
 });
 
-adminRouter.post('/users/:id/disable', requireAdmin, (req, res) => {
-  updateUserStatus(Number(req.params.id), 'disabled');
+adminRouter.post('/users/:id/disable', requireAdmin, async (req, res) => {
+  await updateUserStatus(Number(req.params.id), 'disabled');
   res.json({ ok: true });
 });
 
-adminRouter.post('/users/:id/enable', requireAdmin, (req, res) => {
-  updateUserStatus(Number(req.params.id), 'active');
+adminRouter.post('/users/:id/enable', requireAdmin, async (req, res) => {
+  await updateUserStatus(Number(req.params.id), 'active');
   res.json({ ok: true });
 });
 
 // ---- GET /api/admin/users/:id/orders — a customer's order history ----
-adminRouter.get('/users/:id/orders', requireAdmin, (req, res) => {
+adminRouter.get('/users/:id/orders', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
-  const orders = listOrdersByUserId(id);
-  const byEmail = orders[0]?.email ? listOrdersByEmail(orders[0].email) : [];
+  const orders = await listOrdersByUserId(id);
+  const byEmail = orders[0]?.email ? await listOrdersByEmail(orders[0].email) : [];
   const seen = new Set(orders.map((o) => o.id));
   for (const o of byEmail) if (!seen.has(o.id)) orders.push(o);
   res.json({ orders: orders.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)) });
 });
 
 // ---- notifications ----
-adminRouter.get('/notifications', requireAdmin, (req, res) => {
-  res.json({ notifications: listNotifications(100), unread: countUnreadNotifications() });
+adminRouter.get('/notifications', requireAdmin, async (req, res) => {
+  res.json({ notifications: await listNotifications(100), unread: await countUnreadNotifications() });
 });
 
-adminRouter.post('/notifications/read', requireAdmin, (req, res) => {
+adminRouter.post('/notifications/read', requireAdmin, async (req, res) => {
   const ids = (req.body ?? {}).ids as number[] | undefined;
   if (!Array.isArray(ids)) return res.status(400).json({ error: 'bad.ids' });
-  markNotificationsRead(ids);
+  await markNotificationsRead(ids);
   res.json({ ok: true });
 });
 
 // ---- GET /api/admin/rates/history — daily metal prices for the chart ----
-adminRouter.get('/rates/history', requireAdmin, (req, res) => {
+adminRouter.get('/rates/history', requireAdmin, async (req, res) => {
   const days = Math.min(Number(req.query.days) || 30, 365);
-  const history = getRateHistory(days);
+  const history = await getRateHistory(days);
   res.json({ history });
 });
 
 // ---- GET /api/admin/reports — sales overview for a window ----
-adminRouter.get('/reports', requireAdmin, (req, res) => {
+adminRouter.get('/reports', requireAdmin, async (req, res) => {
   const days = Math.min(Math.max(Number(req.query.days) || 30, 1), 365);
   const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
-  const completed = getCompletedOrdersSince(cutoff);
+  const completed = await getCompletedOrdersSince(cutoff);
 
   const revenue = completed.reduce((s, o) => s + o.totalValue, 0);
   const downPayments = completed.reduce((s, o) => s + o.downPayment, 0);

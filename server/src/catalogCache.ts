@@ -57,7 +57,7 @@ async function load(): Promise<CatalogSnapshot> {
       return true;
     });
   try {
-    recordRateSnapshot(rates);
+    await recordRateSnapshot(rates);
   } catch {
     // non-fatal — rate history is best-effort
   }

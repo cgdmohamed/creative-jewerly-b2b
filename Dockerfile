@@ -2,10 +2,6 @@ FROM node:22-bookworm-slim AS build
 
 WORKDIR /app
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ \
-  && rm -rf /var/lib/apt/lists/*
-
 COPY server/package*.json ./server/
 RUN cd server && npm ci
 
@@ -23,17 +19,11 @@ FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ \
-  && rm -rf /var/lib/apt/lists/*
-
 COPY server/package*.json ./server/
 RUN cd server && npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/client/dist ./client/dist
-
-RUN mkdir -p /app/server/data
 
 EXPOSE 4100
 
