@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { config } from '../config.js';
 import { getCatalog, getCatalogError } from '../catalogCache.js';
 
 export const healthRouter = Router();
@@ -11,10 +10,10 @@ healthRouter.get('/health', async (_req, res) => {
   } catch {
     catalog = 'error';
   }
-  res.json({
-    ok: true,
+  const ok = catalog === 'ok';
+  res.status(ok ? 200 : 503).json({
+    ok,
     time: new Date().toISOString(),
-    mainApiBase: config.apiBaseUrl,
     catalog,
     catalogError: catalog === 'error' ? getCatalogError() : null,
   });

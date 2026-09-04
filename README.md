@@ -122,7 +122,7 @@ SERVICE_REALBASE64_64_B2B=generate-a-strong-secret
 SERVICE_PASSWORD_B2B_POSTGRES=generate-a-strong-db-password
 SHOP_PGUSER=b2b_shop
 SHOP_PGDATABASE=b2b_shop
-API_BASE_URL=https://your-pos-domain.example
+POS_API_URL=https://pos.goldencrown.com.eg
 B2B_USERNAME=b2b
 B2B_PIN=change-this-pin
 STORE_NAME=Wholesale Shop
@@ -134,7 +134,7 @@ ACCOUNT_APPROVAL_ENABLED=true
 DEFAULT_PAYMENT_METHOD=transfer
 ```
 
-If this B2B repository is deployed separately from the POS repository, set `API_BASE_URL` to the public or private reachable URL of the POS API.
+If this B2B repository is deployed separately from the POS repository, set `POS_API_URL` to the public or private reachable URL of the POS API. It defaults to `https://pos.goldencrown.com.eg` for this deployment.
 
 ## Production Notes
 

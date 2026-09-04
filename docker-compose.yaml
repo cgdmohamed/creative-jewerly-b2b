@@ -11,7 +11,7 @@ services:
       - SERVICE_URL_B2B_4100
       - PORT=4100
       - SHOP_JWT_SECRET=${SERVICE_REALBASE64_64_B2B:-change-me-in-production}
-      - API_BASE_URL=${API_BASE_URL:-http://host.docker.internal:4001}
+      - API_BASE_URL=${POS_API_URL:-https://pos.goldencrown.com.eg}
       - B2B_USERNAME=${B2B_USERNAME:-b2b}
       - B2B_PIN=${B2B_PIN:-1234}
       - SHOP_PGHOST=b2b-postgres
