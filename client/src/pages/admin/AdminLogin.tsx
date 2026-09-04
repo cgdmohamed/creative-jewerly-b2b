@@ -26,6 +26,8 @@ export default function AdminLogin() {
     } catch (err) {
       const map: Record<string, string> = {
         'invalid.credentials': 'بيانات الدخول غير صحيحة',
+        'auth.invalid': 'بيانات الدخول غير صحيحة',
+        'rate.limited': 'محاولات كثيرة، انتظر قليلاً ثم حاول مرة أخرى',
       };
       setError(map[(err as ApiError).message] ?? 'تعذر تسجيل الدخول');
     } finally {

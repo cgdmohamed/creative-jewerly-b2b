@@ -203,14 +203,18 @@ class MainApiClient {
       body: JSON.stringify({ identifier, pin }),
     });
     const data: any = await res.json().catch(() => null);
-    if (!res.ok || !data?.token || !data?.employee) return null;
+    if (res.status === 401) return null;
+    if (!res.ok) {
+      throw new ApiClientError(res.status, data?.error || `HTTP ${res.status}`);
+    }
+    if (!data?.token || !data?.employee) return null;
     return {
       token: data.token,
       employee: {
         id: data.employee.id,
-        fullName: data.employee.full_name,
+        fullName: data.employee.fullName ?? data.employee.full_name,
         role: data.employee.role,
-        roleCode: data.employee.role_code,
+        roleCode: data.employee.roleCode ?? data.employee.role_code,
         permissions: Array.isArray(data.employee.permissions) ? data.employee.permissions : [],
       },
     };
