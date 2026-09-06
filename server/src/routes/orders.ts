@@ -90,6 +90,9 @@ ordersRouter.post('/', optionalShopAuth, async (req, res) => {
       customerId = apiCustomer.id;
       if (user) await setUserApiCustomerId(user.id, customerId);
     }
+    // A B2B buyer and a walk-in wholesale trader are the same customer in POS.
+    // Creating the profile is idempotent and keeps future statements unified.
+    await mainApi.ensureWholesaleTrader(customerId, company?.trim() || undefined);
 
     // 4) Hold the stock: one reservation per line in the main system.
     const downPaymentPercent = config.downPaymentPercent;

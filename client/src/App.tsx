@@ -27,6 +27,7 @@ const AdminOrders = lazy(() => import('@/pages/admin/AdminOrders'));
 const AdminUsers = lazy(() => import('@/pages/admin/AdminUsers'));
 const AdminNotifications = lazy(() => import('@/pages/admin/AdminNotifications'));
 const AdminReports = lazy(() => import('@/pages/admin/AdminReports'));
+const AdminWholesale = lazy(() => import('@/pages/admin/AdminWholesale'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +83,7 @@ export default function App() {
               <Route path="users" element={<AdminUsers />} />
               <Route path="notifications" element={<AdminNotifications />} />
               <Route path="reports" element={<AdminReports />} />
+              <Route path="wholesale" element={<AdminWholesale />} />
             </Route>
           </Routes>
         </Suspense>

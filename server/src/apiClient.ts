@@ -186,6 +186,32 @@ class MainApiClient {
     return this.post<any>('/api/invoices', body);
   }
 
+  // ---- unified wholesale ledger (owned by the main POS) ----
+  async fetchWholesaleDashboard(): Promise<any> {
+    return this.get('/api/wholesale/dashboard');
+  }
+
+  async fetchWholesaleTraders(): Promise<any[]> {
+    return this.get('/api/wholesale/traders');
+  }
+
+  async fetchWholesaleOrders(): Promise<any[]> {
+    return this.get('/api/wholesale/orders');
+  }
+
+  async fetchWholesaleStatement(traderId: number): Promise<any> {
+    return this.get(`/api/wholesale/traders/${traderId}/statement`);
+  }
+
+  async ensureWholesaleTrader(customerId: number, businessName?: string): Promise<void> {
+    try {
+      await this.post('/api/wholesale/traders', { customerId, businessName: businessName || null });
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 409) return;
+      throw error;
+    }
+  }
+
   // ---- staff admin auth (validated against the main system) ----
   async loginEmployee(identifier: string, pin: string): Promise<{
     token: string;

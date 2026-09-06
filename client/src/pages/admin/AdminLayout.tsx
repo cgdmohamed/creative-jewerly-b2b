@@ -1,7 +1,7 @@
 import { Suspense, useEffect } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, BarChart3, ClipboardList, LayoutDashboard, LogOut, ShieldCheck, Users } from 'lucide-react';
+import { Bell, BarChart3, ClipboardList, LayoutDashboard, LogOut, Scale, ShieldCheck, Users } from 'lucide-react';
 import { useAdmin } from '@/stores/admin';
 import { adminApi } from '@/lib/api';
 import type { ShopNotification } from '@/lib/types';
@@ -12,6 +12,7 @@ const NAV = [
   { to: '/admin', label: 'لوحة التحكم', icon: LayoutDashboard, end: true },
   { to: '/admin/orders', label: 'الطلبات', icon: ClipboardList },
   { to: '/admin/users', label: 'العملاء', icon: Users },
+  { to: '/admin/wholesale', label: 'تجار الجملة', icon: Scale },
   { to: '/admin/reports', label: 'التقارير', icon: BarChart3 },
   { to: '/admin/notifications', label: 'التنبيهات', icon: Bell },
 ];

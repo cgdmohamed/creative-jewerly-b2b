@@ -72,6 +72,21 @@ adminRouter.get('/me', requireAdmin, (req, res) => {
   res.json({ admin: (req as any).admin });
 });
 
+// Wholesale weight orders and balances remain authoritative in POS. The shop
+// admin only proxies the same records so web and walk-in business stay unified.
+adminRouter.get('/wholesale', requireAdmin, async (_req, res) => {
+  const [summary, traders, orders] = await Promise.all([
+    mainApi.fetchWholesaleDashboard(),
+    mainApi.fetchWholesaleTraders(),
+    mainApi.fetchWholesaleOrders(),
+  ]);
+  res.json({ summary, traders, orders });
+});
+
+adminRouter.get('/wholesale/traders/:id/statement', requireAdmin, async (req, res) => {
+  res.json(await mainApi.fetchWholesaleStatement(Number(req.params.id)));
+});
+
 // ---- orders ----
 adminRouter.get('/orders', requireAdmin, async (req, res) => {
   const status = (req.query.status as string) || undefined;

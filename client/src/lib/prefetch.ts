@@ -16,6 +16,7 @@ const ROUTE_PREFETCH: Array<[RegExp, LazyModule]> = [
   [/^\/admin\/login/, () => import('@/pages/admin/AdminLogin')],
   [/^\/admin\/notifications/, () => import('@/pages/admin/AdminNotifications')],
   [/^\/admin\/reports/, () => import('@/pages/admin/AdminReports')],
+  [/^\/admin\/wholesale/, () => import('@/pages/admin/AdminWholesale')],
   [/^\/admin\/users/, () => import('@/pages/admin/AdminUsers')],
   [/^\/admin\/orders/, () => import('@/pages/admin/AdminOrders')],
   [/^\/admin/, () => import('@/pages/admin/AdminLayout')],
